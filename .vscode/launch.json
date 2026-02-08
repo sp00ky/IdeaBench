@@ -50,6 +50,12 @@
         "Run DbMigrator",
         "Run UI"
       ]
+    },
+    {
+      "name": "Docker: UI (Compose)",
+      "configurations": [
+        "Docker: UI (Compose)"
+      ]
     }
   ]
 }

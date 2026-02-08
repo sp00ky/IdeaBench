@@ -10,6 +10,28 @@
         "pids=$(lsof -ti tcp:5188); if [ -n \"$pids\" ]; then kill $pids; fi"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-up",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "up",
+        "--build",
+        "-d"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "docker-compose-down",
+      "type": "shell",
+      "command": "docker",
+      "args": [
+        "compose",
+        "down"
+      ],
+      "problemMatcher": []
     }
   ]
 }

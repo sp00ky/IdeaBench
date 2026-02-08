@@ -1,0 +1,17 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+**/*.log
+**/.DS_Store
+**/node_modules/
+**/publish/
+**/TestResults/
+**/*.db
+**/*.db-shm
+**/*.db-wal

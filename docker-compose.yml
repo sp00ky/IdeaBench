@@ -1,0 +1,28 @@
+services:
+  migrator:
+    build:
+      context: .
+      target: migrator
+    environment:
+      ConnectionStrings__DefaultConnection: "Data Source=/data/ideabench.db"
+    volumes:
+      - ideabench-data:/data
+    restart: "no"
+
+  ui:
+    build:
+      context: .
+      target: ui
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__DefaultConnection: "Data Source=/data/ideabench.db"
+    ports:
+      - "5188:8080"
+    volumes:
+      - ideabench-data:/data
+
+volumes:
+  ideabench-data:
