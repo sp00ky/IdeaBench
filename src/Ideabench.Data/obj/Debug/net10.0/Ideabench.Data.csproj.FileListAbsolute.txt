@@ -1,0 +1,12 @@
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/bin/Debug/net10.0/Ideabench.Data.deps.json
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/bin/Debug/net10.0/Ideabench.Data.dll
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/bin/Debug/net10.0/Ideabench.Data.pdb
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.csproj.AssemblyReference.cache
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.GeneratedMSBuildEditorConfig.editorconfig
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.AssemblyInfoInputs.cache
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.AssemblyInfo.cs
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.csproj.CoreCompileInputs.cache
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.dll
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/refint/Ideabench.Data.dll
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/Ideabench.Data.pdb
+/Users/kelly/repos/local/ideabench/src/Ideabench.Data/obj/Debug/net10.0/ref/Ideabench.Data.dll

@@ -1,0 +1,7 @@
+{
+  "terminal.integrated.showExitAlert": "never",
+  "terminal.integrated.confirmOnExit": "never",
+  "terminal.integrated.enablePersistentSessions": false,
+  "terminal.integrated.persistentSessionReviveProcess": "never",
+  "terminal.integrated.closeOnExit": "always"
+}

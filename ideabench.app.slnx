@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ideabench.Data/Ideabench.Data.csproj" />
+    <Project Path="src/Ideabench.DbMigrator/Ideabench.DbMigrator.csproj" />
+    <Project Path="src/Ideabench.Endpoints/Ideabench.Endpoints.csproj" />
+    <Project Path="src/Ideabench.Ui/Ideabench.Ui.csproj" />
+  </Folder>
+</Solution>

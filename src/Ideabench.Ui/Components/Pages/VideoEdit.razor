@@ -1,0 +1,317 @@
+@page "/videos/new"
+@page "/videos/{Id:guid}/edit"
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@(IsNew ? "New Video" : "Edit Video")</PageTitle>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudStack Spacing="3">
+        <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" Href="/">
+            Back to Library
+        </MudButton>
+
+        <MudPaper Class="hero-card">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h4">@(IsNew ? "Add a new video" : "Edit video entry")</MudText>
+                <MudText Typo="Typo.body2">Keep the summary tight and the tags meaningful.</MudText>
+
+                <MudForm @ref="_form">
+                    <MudTextField @bind-Value="_model.Title"
+                                  Label="Title"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  MaxLength="@AppDbContext.MaxTitleLength" />
+
+                    <MudTextField @bind-Value="_model.VideoUrl"
+                                  Label="Video URL"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  MaxLength="@AppDbContext.MaxVideoUrlLength" />
+
+                    <MudTextField @bind-Value="_model.ThumbnailUrl"
+                                  Label="Thumbnail URL"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  MaxLength="@AppDbContext.MaxThumbnailUrlLength" />
+
+                    <MudTextField @bind-Value="_model.Summary"
+                                  Label="Summary"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  Lines="10"
+                                  MaxLength="@AppDbContext.MaxSummaryLength" />
+
+                    <MudTextField @bind-Value="_model.Tags"
+                                  Label="Tags"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="story, creativity, analysis"
+                                  HelperText="Comma-separated tags." />
+
+                    <div class="tag-row">
+                        @foreach (var tag in PreviewTags)
+                        {
+                            <span class="tag-chip">@tag</span>
+                        }
+                    </div>
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.SpaceBetween" Class="mt-4">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="_isSaving"
+                                   OnClick="SaveAsync">
+                            Save
+                        </MudButton>
+                        @if (!IsNew)
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       Disabled="_isSaving"
+                                       OnClick="DeleteAsync">
+                                Delete
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudForm>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+}
+
+@code {
+    [Parameter]
+    public Guid? Id { get; set; }
+
+    private MudForm? _form;
+    private VideoEditModel _model = new();
+    private bool _isLoading = true;
+    private bool _isSaving;
+
+    private bool IsNew => !Id.HasValue;
+
+    private IEnumerable<string> PreviewTags => NormalizeTags(_model.Tags);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        if (IsNew)
+        {
+            _model = new VideoEditModel();
+            _isLoading = false;
+            return;
+        }
+
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
+        var id = Id!.Value;
+        var video = await dbContext.VideoEntries
+            .AsNoTracking()
+            .Include(entry => entry.VideoTags)
+            .ThenInclude(videoTag => videoTag.Tag)
+            .FirstOrDefaultAsync(entry => entry.Id == id);
+
+        if (video is null)
+        {
+            Snackbar.Add("Video entry not found.", Severity.Warning);
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _model = new VideoEditModel
+        {
+            Title = video.Title,
+            VideoUrl = video.VideoUrl,
+            ThumbnailUrl = video.ThumbnailUrl,
+            Summary = video.Summary,
+            Tags = string.Join(", ", video.VideoTags.Select(videoTag => videoTag.Tag?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
+        };
+
+        _isLoading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+        if (!_form.IsValid)
+        {
+            Snackbar.Add("Please fix the validation errors.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            await using var dbContext = await DbFactory.CreateDbContextAsync();
+            VideoEntry? video;
+
+            if (IsNew)
+            {
+                var now = DateTime.UtcNow;
+                video = new VideoEntry
+                {
+                    Id = Guid.NewGuid(),
+                    CreatedUtc = now,
+                    UpdatedUtc = now
+                };
+                dbContext.VideoEntries.Add(video);
+            }
+            else
+            {
+                var id = Id!.Value;
+                video = await dbContext.VideoEntries
+                    .Include(entry => entry.VideoTags)
+                    .ThenInclude(videoTag => videoTag.Tag)
+                    .FirstOrDefaultAsync(entry => entry.Id == id);
+
+                if (video is null)
+                {
+                    Snackbar.Add("Video entry not found.", Severity.Warning);
+                    return;
+                }
+            }
+
+            if (video is null)
+            {
+                return;
+            }
+
+            video.Title = _model.Title.Trim();
+            video.VideoUrl = _model.VideoUrl.Trim();
+            video.ThumbnailUrl = _model.ThumbnailUrl.Trim();
+            video.Summary = _model.Summary.Trim();
+            video.UpdatedUtc = DateTime.UtcNow;
+
+            await SyncTagsAsync(dbContext, video, NormalizeTags(_model.Tags));
+
+            await dbContext.SaveChangesAsync();
+
+            Snackbar.Add("Video saved.", Severity.Success);
+            Navigation.NavigateTo($"/videos/{video.Id}");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Save failed: {ex.Message}", Severity.Error);
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (IsNew || Id is null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
+        var id = Id!.Value;
+        var video = await dbContext.VideoEntries
+            .Include(entry => entry.VideoTags)
+            .FirstOrDefaultAsync(entry => entry.Id == id);
+
+        if (video is null)
+        {
+            Snackbar.Add("Video entry not found.", Severity.Warning);
+            _isSaving = false;
+            return;
+        }
+
+        dbContext.VideoTags.RemoveRange(video.VideoTags);
+        dbContext.VideoEntries.Remove(video);
+        await dbContext.SaveChangesAsync();
+
+        _isSaving = false;
+        Snackbar.Add("Video deleted.", Severity.Success);
+        Navigation.NavigateTo("/");
+    }
+
+    private static async Task SyncTagsAsync(AppDbContext dbContext, VideoEntry video, List<string> desiredTags)
+    {
+        var existingTags = await dbContext.Tags
+            .Where(tag => desiredTags.Contains(tag.Name))
+            .ToListAsync();
+
+        var existingNames = existingTags
+            .Select(tag => tag.Name)
+            .ToHashSet();
+
+        var newTags = desiredTags
+            .Where(name => !existingNames.Contains(name))
+            .Select(name => new Tag { Id = Guid.NewGuid(), Name = name })
+            .ToList();
+
+        if (newTags.Count > 0)
+        {
+            dbContext.Tags.AddRange(newTags);
+        }
+
+        var desiredSet = desiredTags.ToHashSet();
+        var tagsToRemove = video.VideoTags
+            .Where(videoTag => videoTag.Tag is not null && !desiredSet.Contains(videoTag.Tag.Name))
+            .ToList();
+
+        foreach (var videoTag in tagsToRemove)
+        {
+            video.VideoTags.Remove(videoTag);
+        }
+
+        var currentSet = video.VideoTags
+            .Where(videoTag => videoTag.Tag is not null)
+            .Select(videoTag => videoTag.Tag!.Name)
+            .ToHashSet();
+
+        foreach (var tag in existingTags.Concat(newTags))
+        {
+            if (!currentSet.Contains(tag.Name))
+            {
+                video.VideoTags.Add(new VideoTag
+                {
+                    VideoEntryId = video.Id,
+                    TagId = tag.Id,
+                    Tag = tag
+                });
+            }
+        }
+    }
+
+    private static List<string> NormalizeTags(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return new List<string>();
+        }
+
+        return input
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(tag => tag.Trim())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.ToLowerInvariant())
+            .Distinct()
+            .ToList();
+    }
+
+    private sealed class VideoEditModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string VideoUrl { get; set; } = string.Empty;
+        public string ThumbnailUrl { get; set; } = string.Empty;
+        public string Summary { get; set; } = string.Empty;
+        public string Tags { get; set; } = string.Empty;
+    }
+}

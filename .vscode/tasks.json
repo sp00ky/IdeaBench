@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "free-port-5188",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-c",
+        "pids=$(lsof -ti tcp:5188); if [ -n \"$pids\" ]; then kill $pids; fi"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,162 @@
+﻿@page "/"
+@page "/videos"
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>IdeaBench</PageTitle>
+
+<div class="page-header">
+	<MudText Typo="Typo.h3">IdeaBench</MudText>
+	<MudText Typo="Typo.body1">Curate the videos you plan to watch and remember why they matter.</MudText>
+</div>
+
+<MudPaper Class="hero-card">
+	<MudText Typo="Typo.h4">Your watchlist, curated.</MudText>
+	<MudText Typo="Typo.body2">Search by title or summary, then filter down with tags.</MudText>
+
+	<div class="search-bar mt-6">
+		<MudTextField @bind-Value="_query"
+					  Label="Search"
+					  Placeholder="design patterns, growth loops, creative workflows"
+					  Variant="Variant.Outlined"
+					  Immediate="true" />
+		<MudTextField @bind-Value="_tagsInput"
+					  Label="Tags"
+					  Placeholder="strategy, ai, story"
+					  Variant="Variant.Outlined" />
+		<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SearchAsync">
+			Search
+		</MudButton>
+	</div>
+</MudPaper>
+
+<div class="mt-6">
+	<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+		<MudText Typo="Typo.h5">Library</MudText>
+		<MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="SearchAsync">
+			Refresh
+		</MudButton>
+	</MudStack>
+</div>
+
+@if (_isLoading)
+{
+	<MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mt-4" />
+}
+else if (_videos.Count == 0)
+{
+	<div class="empty-state mt-6">
+		<MudText Typo="Typo.h6">Nothing here yet.</MudText>
+		<MudText Typo="Typo.body2">Add a video to start building your watchlist.</MudText>
+	</div>
+}
+else
+{
+	<div class="video-grid mt-6">
+		@foreach (var video in _videos)
+		{
+			<article class="video-card">
+				<div class="video-thumb">
+					<img src="@video.ThumbnailUrl" alt="@video.Title" loading="lazy" />
+				</div>
+				<div class="video-body">
+					<MudText Typo="Typo.h6">@video.Title</MudText>
+					<MudText Class="video-summary">@GetPreview(video.Summary)</MudText>
+					<div class="tag-row">
+						@foreach (var tag in video.VideoTags.Select(videoTag => videoTag.Tag?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
+						{
+							<span class="tag-chip">@tag</span>
+						}
+					</div>
+					<MudStack Row="true" Spacing="1" Justify="Justify.SpaceBetween">
+						<MudButton Variant="Variant.Text" Color="Color.Primary" Href="@($"/videos/{video.Id}")">View</MudButton>
+						<MudButton Variant="Variant.Text" Color="Color.Secondary" Href="@($"/videos/{video.Id}/edit")">Edit</MudButton>
+						@if (!string.IsNullOrWhiteSpace(video.VideoUrl))
+						{
+							<MudButton Variant="Variant.Text" Color="Color.Tertiary" Href="@video.VideoUrl" Target="_blank" Rel="noopener">Watch</MudButton>
+						}
+					</MudStack>
+				</div>
+			</article>
+		}
+	</div>
+}
+
+@code {
+	private readonly List<VideoEntry> _videos = new();
+	private bool _isLoading;
+	private string _query = string.Empty;
+	private string _tagsInput = string.Empty;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await SearchAsync();
+	}
+
+	private async Task SearchAsync()
+	{
+		_isLoading = true;
+		_videos.Clear();
+
+		await using var dbContext = await DbFactory.CreateDbContextAsync();
+		var queryable = dbContext.VideoEntries
+			.AsNoTracking()
+			.Include(entry => entry.VideoTags)
+			.ThenInclude(videoTag => videoTag.Tag)
+			.AsQueryable();
+
+		if (!string.IsNullOrWhiteSpace(_query))
+		{
+			var term = _query.Trim();
+			queryable = queryable.Where(entry =>
+				EF.Functions.Like(entry.Title, $"%{term}%") ||
+				EF.Functions.Like(entry.Summary, $"%{term}%"));
+		}
+
+		var tags = NormalizeTags(_tagsInput);
+		if (tags.Count > 0)
+		{
+			queryable = queryable.Where(entry =>
+				entry.VideoTags.Any(videoTag => videoTag.Tag != null && tags.Contains(videoTag.Tag.Name)));
+		}
+
+		var results = await queryable
+			.OrderByDescending(entry => entry.UpdatedUtc)
+			.ToListAsync();
+
+		_videos.AddRange(results);
+		_isLoading = false;
+	}
+
+	private static List<string> NormalizeTags(string? input)
+	{
+		if (string.IsNullOrWhiteSpace(input))
+		{
+			return new List<string>();
+		}
+
+		return input
+			.Split(',', StringSplitOptions.RemoveEmptyEntries)
+			.Select(tag => tag.Trim())
+			.Where(tag => !string.IsNullOrWhiteSpace(tag))
+			.Select(tag => tag.ToLowerInvariant())
+			.Distinct()
+			.ToList();
+	}
+
+	private static string GetPreview(string summary)
+	{
+		if (string.IsNullOrWhiteSpace(summary))
+		{
+			return string.Empty;
+		}
+
+		const int maxLength = 220;
+		if (summary.Length <= maxLength)
+		{
+			return summary;
+		}
+
+		return summary[..maxLength].Trim() + "...";
+	}
+}

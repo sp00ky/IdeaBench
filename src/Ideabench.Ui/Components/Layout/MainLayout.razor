@@ -1,0 +1,48 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="@_theme" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Class="appbar">
+        <div class="nav-shell">
+            <div class="brand-pill">
+                <MudText Typo="Typo.h6" Class="brand">IdeaBench</MudText>
+                <span class="brand-badge">Video Library</span>
+            </div>
+
+            <div class="nav-links">
+                <MudNavLink Href="/" Match="NavLinkMatch.All">Library</MudNavLink>
+                <MudNavLink Href="/videos/new">New Entry</MudNavLink>
+                <MudNavLink Href="/videos">All Videos</MudNavLink>
+            </div>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Add" Href="/videos/new" Class="cta-button">
+                Add Video
+            </MudButton>
+        </div>
+    </MudAppBar>
+
+    <MudMainContent Class="main-content">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary = "#1f5e5b",
+            Secondary = "#f49f0a",
+            Background = "#f7f4ef",
+            Surface = "#ffffff",
+            AppbarBackground = "rgba(255, 255, 255, 0.75)",
+            DrawerBackground = "#0f2b2a",
+            DrawerText = "#f5efe6",
+            TextPrimary = "#1a1a1a",
+            TextSecondary = "#4a4a4a"
+        }
+    };
+}

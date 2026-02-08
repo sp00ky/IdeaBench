@@ -1,0 +1,81 @@
+@page "/videos/{Id:guid}"
+
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Video Details</PageTitle>
+
+@if (_isLoading)
+{
+    <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+}
+else if (_video is null)
+{
+    <MudPaper Class="hero-card">
+        <MudText Typo="Typo.h5">Video not found.</MudText>
+        <MudButton Variant="Variant.Text" Color="Color.Primary" Href="/">Back to Library</MudButton>
+    </MudPaper>
+}
+else
+{
+    <MudStack Spacing="3">
+        <MudButton Variant="Variant.Text" Color="Color.Primary" StartIcon="@Icons.Material.Filled.ArrowBack" Href="/">
+            Back to Library
+        </MudButton>
+
+        <MudPaper Class="hero-card">
+            <MudStack Spacing="2">
+                <MudText Typo="Typo.h3">@_video.Title</MudText>
+                <MudText Typo="Typo.body2">Updated @FormatDate(_video.UpdatedUtc)</MudText>
+
+                <div class="video-thumb" style="border-radius: 18px; overflow: hidden;">
+                    <img src="@_video.ThumbnailUrl" alt="@_video.Title" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_video.VideoUrl))
+                {
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="@_video.VideoUrl" Target="_blank" Rel="noopener">
+                        Watch Video
+                    </MudButton>
+                }
+
+                <div class="tag-row">
+                    @foreach (var tag in _video.VideoTags.Select(videoTag => videoTag.Tag?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
+                    {
+                        <span class="tag-chip">@tag</span>
+                    }
+                </div>
+
+                <MudText Typo="Typo.body1" Style="white-space: pre-wrap;">@_video.Summary</MudText>
+
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="@($"/videos/{_video.Id}/edit")">
+                    Edit Video
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudStack>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private VideoEntry? _video;
+    private bool _isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        await using var dbContext = await DbFactory.CreateDbContextAsync();
+        _video = await dbContext.VideoEntries
+            .AsNoTracking()
+            .Include(entry => entry.VideoTags)
+            .ThenInclude(videoTag => videoTag.Tag)
+            .FirstOrDefaultAsync(entry => entry.Id == Id);
+        _isLoading = false;
+    }
+
+    private static string FormatDate(DateTime dateTime)
+    {
+        return dateTime.ToLocalTime().ToString("MMM d, yyyy");
+    }
+}
