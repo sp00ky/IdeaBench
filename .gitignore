@@ -1,0 +1,89 @@
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# User-specific files (MonoDevelop/Xamarin Studio)
+*.userprefs
+
+# Visual Studio workspace
+.vs/
+
+# VS Code
+.vscode/
+
+# Rider
+.idea/
+*.sln.iml
+
+# ASP.NET Core
+appsettings.*.json
+!appsettings.Development.json
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+# The packages folder can be ignored because of PackageReference
+**/packages/
+# Uncomment if you still use packages.config
+# **/packages/*
+# !**/packages/build/
+# !**/packages/repositories.config
+
+# Publish
+**/publish/
+
+# Azure
+**/csx/
+**/*.publishsettings
+
+# Local databases
+*.mdf
+*.ldf
+*.db
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Linux
+*~
+
+# Test results
+TestResults/
+
+# JetBrains
+.idea/
+
+# Coverage
+*.opencover.xml
+*.coverage
+*.coveragexml
+
+# EF Core
+**/Migrations/*.Designer.cs
+**/Migrations/*.resx
+
+# Node
+node_modules/
+
+# NPM debug
+npm-debug.log*
+
+# Yarn
+yarn-debug.log*
+yarn-error.log*
+
+# Local tool state
+.localhistory/
